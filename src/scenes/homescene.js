@@ -50,6 +50,8 @@ export class HomeScene extends Phaser.Scene {
         buttonRules.on('pointerdown', () => {
             this.scene.start('RulesScene');
         });
+
+        
         // Crédito pequeno no canto inferior direito
         this.add.text(width - 10, height - 6, 'Sofia Martins Nº28849 ECGM', {
             fontSize: '18px',
