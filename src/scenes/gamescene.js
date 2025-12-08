@@ -27,6 +27,17 @@ export class GameScene extends Phaser.Scene {
         // Quantidade de scroll (60 segundos ≈ 1600px)
         this.worldEnd = 9600;
         this.scrollX = 0;
+        
+        // Sistema de tempo
+        this.timeLimit = 90000; // 90 segundos em milissegundos
+        this.startTime = this.time.now;
+        this.gameOver = false;
+        this.timerText = this.add.text(width / 2, 16, '', {
+            fontSize: '32px',
+            fill: '#ffffff',
+            fontFamily: 'Arial',
+            align: 'center'
+        }).setOrigin(0.5, 0).setScrollFactor(0); // Não segue o scroll da câmara
 
         const playerY = groundY - 18; // altura do wizard (metade da altura da sprite)
         this.player = this.physics.add.sprite(80, playerY, 'wizard', 7);
@@ -36,6 +47,7 @@ export class GameScene extends Phaser.Scene {
         this.player.setDrag(0); // Sem resistência
         this.player.setCollideWorldBounds(true);
         this.player.setGravityY(0); // Usar a gravidade padrão do mundo
+        this.player.body.setSize(20, 35); // Ajustar hitbox ao tamanho real do wizard
 
         // Plataformas para saltar - padrões variados do início ao fim do jogo
         this.platforms = this.physics.add.group();
@@ -46,9 +58,9 @@ export class GameScene extends Phaser.Scene {
             // Padrão 1: Escada subindo
             [
                 { dx: 0, dy: 0 },
-                { dx: 140, dy: -30 },
-                { dx: 280, dy: -60 },
-                { dx: 420, dy: -90 }
+                { dx: 140, dy: -25 },
+                { dx: 280, dy: -50 },
+                { dx: 420, dy: -75 }
             ],
             // Padrão 2: Dupla com espaço
             [
@@ -58,8 +70,8 @@ export class GameScene extends Phaser.Scene {
             // Padrão 3: Escada descendo
             [
                 { dx: 0, dy: 0 },
-                { dx: 140, dy: 30 },
-                { dx: 280, dy: 60 }
+                { dx: 140, dy: 25 },
+                { dx: 280, dy: 50 }
             ],
             // Padrão 4: Dupla com espaço
             [
@@ -69,8 +81,8 @@ export class GameScene extends Phaser.Scene {
             // Padrão 5: Escada subindo
             [
                 { dx: 0, dy: 0 },
-                { dx: 140, dy: -30 },
-                { dx: 280, dy: -60 }
+                { dx: 140, dy: -25 },
+                { dx: 280, dy: -50 }
             ]
         ];
         
@@ -100,12 +112,13 @@ export class GameScene extends Phaser.Scene {
             platform.setImmovable(true); // Imóvel
             platform.setVelocity(0, 0); // Sem movimento
             platform.body.setAllowGravity(false); // Sem gravidade
+            platform.body.setSize(platform.width, platform.height); // Garantir hitbox correta
             platform.refreshBody();
         });
 
         // Colisão do player com o chão e plataformas
         this.physics.add.collider(this.player, this.ground);
-        this.physics.add.collider(this.player, this.platforms);
+        this.platformCollider = this.physics.add.collider(this.player, this.platforms);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -154,27 +167,45 @@ export class GameScene extends Phaser.Scene {
         this.platformData.forEach((data, index) => {
             const platform = this.platforms.children.entries[index];
             platform.x = data.x - this.scrollX;
+            platform.y = data.y;
         });
         
-        // Bloquear passagem por trás das plataformas (colisão lateral)
+        // Forçar recalculação de colisões (Phaser não faz isto automaticamente para corpos imóveis)
         this.platforms.children.entries.forEach(platform => {
-            const platformLeft = platform.x - platform.displayWidth / 2;
-            const platformRight = platform.x + platform.displayWidth / 2;
-            const platformTop = platform.y - platform.displayHeight / 2;
-            const platformBottom = platform.y + platform.displayHeight / 2;
-            
-            // Se o player está ao lado de uma plataforma, empurra para trás
-            if (this.player.y < platformTop && this.player.y > platformBottom - 50) {
-                // Lado esquerdo
-                if (this.player.x < platformLeft && this.player.x > platformLeft - 50) {
-                    this.player.x = platformLeft - 35;
-                }
-                // Lado direito
-                if (this.player.x > platformRight && this.player.x < platformRight + 50) {
-                    this.player.x = platformRight + 35;
-                }
-            }
+            platform.body.updateFromGameObject();
         });
+        
+        // Atualizar tempo e verificar se ultrapassou o limite
+        const elapsedTime = this.time.now - this.startTime;
+        const remainingTime = Math.max(0, Math.floor((this.timeLimit - elapsedTime) / 1000));
+        this.timerText.setText(`${remainingTime}s`);
+        
+        // Game over por tempo
+        if (elapsedTime > this.timeLimit && !this.gameOver) {
+            this.gameOver = true;
+            this.gameOverTime = this.time.now; // Guardar momento do game over
+            this.player.setVelocity(0, 0);
+            this.timerText.setText('');
+            
+            // Criar texto "GAME OVER" no centro da tela
+            const { width, height } = this.scale;
+            this.gameOverText = this.add.text(width / 2, height / 2, 'GAME OVER', {
+                fontSize: '80px',
+                fill: '#ff0000',
+                fontFamily: 'Arial',
+                align: 'center'
+            }).setOrigin(0.5, 0.5).setScrollFactor(0); // Não segue o scroll
+            
+            // Voltar ao menu após 3 segundos
+            this.time.delayedCall(3000, () => {
+                this.scene.start('HomeScene');
+            });
+        }
+        
+        // Se game over, não continua a processar o resto do update
+        if (this.gameOver) {
+            return;
+        }
         
         if (this.cursors.right.isDown) {
 
@@ -237,7 +268,7 @@ export class GameScene extends Phaser.Scene {
 
         // Salto - independente do movimento horizontal
         if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.setVelocityY(-330);
+            this.player.setVelocityY(-420);
         }
 
         this.updateWorldScroll();
