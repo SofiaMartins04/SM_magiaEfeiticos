@@ -3,7 +3,6 @@ import { HomeScene } from './scenes/homescene.js';
 import { RulesScene } from './scenes/rulesscene.js';
 import { GameScene } from './scenes/gamescene.js';
 
-
 const config = {
     type: Phaser.AUTO,
     parent: 'game-container',

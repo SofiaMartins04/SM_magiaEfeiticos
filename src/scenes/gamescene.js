@@ -4,6 +4,7 @@ export class GameScene extends Phaser.Scene {
         super('GameScene');
     }
 
+    // imagens do jogo
     preload() {
         this.load.image('Fundo', 'assets/fundo.png');
         this.load.image('rock_tile', 'assets/rock.png');
@@ -22,6 +23,7 @@ export class GameScene extends Phaser.Scene {
         );
     }
 
+    // Configura o mapa e elementos do jogo
     create() {
         const { width, height } = this.scale;
 
@@ -30,19 +32,20 @@ export class GameScene extends Phaser.Scene {
         const tileHeight = 32;
         const groundY = height - tileHeight;
 
-        // Plataforma inicial pequena (apenas onde o jogador começa)
+        // Cria a plataforma onde o jogador começa
         this.startPlatform = this.physics.add.sprite(80, groundY, 'rock_tile');
-        this.startPlatform.setScale(2, 1); // Plataforma pequena, do tamanho de 2 tiles
+        this.startPlatform.setScale(2, 1);
         this.startPlatform.setImmovable(true);
         this.startPlatform.body.setAllowGravity(false);
         this.startPlatform.refreshBody();
 
-        // Quantidade de scroll (10 segundos ≈ 1600px)
+        
+        // mapa
         this.worldEnd = 9200;
         this.scrollX = 0;
         
-        // Sistema de tempo
-        this.timeLimit = 60000; // 60 segundos em milissegundos
+        // Timer do jogo - 60 segundos para completar
+        this.timeLimit = 60000;
         this.startTime = this.time.now;
         this.gameOver = false;
         this.timerText = this.add.text(width / 2, 16, '', {
@@ -59,48 +62,67 @@ export class GameScene extends Phaser.Scene {
             fill: '#ffffff',
             fontFamily: 'Arial',
             align: 'right'
-        }).setOrigin(1, 0).setScrollFactor(0); 
+        }).setOrigin(1, 0).setScrollFactor(0);
+        
+        // Botão para voltar ao menu
+        const menuButton = this.add.image(55, 35, 'btnMenu').setScale(0.25);
+        menuButton.setScrollFactor(0);
+        menuButton.setInteractive({ useHandCursor: true });
+        
+        menuButton.on('pointerover', () => {
+            menuButton.setScale(0.3);
+        });
+        
+        menuButton.on('pointerout', () => {
+            menuButton.setScale(0.25);
+        });
+        
+        menuButton.on('pointerdown', () => {
+            this.scene.start('HomeScene');
+        });
 
+        // Cria o jogador 
         const playerY = groundY - 18; 
         this.player = this.physics.add.sprite(80, playerY, 'wizard', 7);
         this.player.setScale(2); 
-        this.player.setOrigin(0.5, 1); // Origin no pé do boneco
+        this.player.setOrigin(0.5, 1);
         this.player.setBounce(0, 0);
         this.player.setDrag(0); 
         this.player.setCollideWorldBounds(false); 
         this.player.setGravityY(0); 
         this.player.body.setSize(20, 35); 
 
-        // Plataformas para saltar - padrões variados do início ao fim do jogo
+        // Cria as plataformas em diferentes padrões
         this.platforms = this.physics.add.group();
         this.platformData = [];
         
         let currentX = 300;
+        // Define vários padrões de plataformas para o jogador seguir (escadas, duplas, etc)
         const patterns = [
-            // Padrão 1: Escada subindo
+            // Escada a subir para cima
             [
                 { dx: 0, dy: 0 },
                 { dx: 140, dy: -25 },
                 { dx: 280, dy: -50 },
                 { dx: 420, dy: -75 }
             ],
-            // Padrão 2: Dupla com espaço
+            // Duas plataformas juntas
             [
                 { dx: 0, dy: 0 },
                 { dx: 150, dy: 0 }
             ],
-            // Padrão 3: Escada descendo
+            // Escada a descer para baixo
             [
                 { dx: 0, dy: 0 },
                 { dx: 140, dy: 25 },
                 { dx: 280, dy: 50 }
             ],
-            // Padrão 4: Dupla com espaço
+            // Duas plataformas juntas novamente
             [
                 { dx: 0, dy: 0 },
                 { dx: 150, dy: 0 }
             ],
-            // Padrão 5: Escada subindo
+            // Outra escada a subir
             [
                 { dx: 0, dy: 0 },
                 { dx: 140, dy: -25 },
@@ -111,7 +133,7 @@ export class GameScene extends Phaser.Scene {
         const patternSpacings = [700, 450, 550, 450, 550];
         let patternIndex = 0;
         
-        // Gerar padrões até ao fim do jogo
+        // Monta todas as plataformas do mapa e usa os padrões
         while (currentX < this.worldEnd - 500) {
             const baseY = 350;
             const pattern = patterns[patternIndex % patterns.length];
@@ -128,33 +150,35 @@ export class GameScene extends Phaser.Scene {
             patternIndex++;
         }
         
+        // Cria cada plataforma na scene
         this.platformData.forEach(data => {
             const platform = this.platforms.create(data.x, data.y, 'rock_tile');
             platform.setScale(data.scale, 1);
-            platform.setImmovable(true); // Imóvel
-            platform.setVelocity(0, 0); // Sem movimento
-            platform.body.setAllowGravity(false); // Sem gravidade
-            platform.body.setSize(platform.width, platform.height); // Garantir hitbox correta
+            platform.setImmovable(true);
+            platform.setVelocity(0, 0);
+            platform.body.setAllowGravity(false);
+            platform.body.setSize(platform.width, platform.height);
             platform.refreshBody();
         });
 
-        // Criar grupos de items (estrelas e poções)
+        // Cria dois grupos: um para as estrelas e outro para as poções
         this.stars = this.physics.add.group();
         this.potions = this.physics.add.group();
-        this.itemPositions = []; // Guardar posições originais dos items
+        this.itemPositions = [];
         
-        // Distribuir 3 estrelas (20 pontos cada) e 4 poções (10 pontos cada) com alturas variadas
+        // Coloca as estrelas e poções em vários locais
         const itemData = [
-            { x: 800, y: 200, type: 'star' },      // Alta
-            { x: 1500, y: 300, type: 'potion' },   // Média-baixa
-            { x: 2200, y: 150, type: 'potion' },   // Muito alta
-            { x: 3200, y: 280, type: 'star' },     // Média
-            { x: 4500, y: 350, type: 'potion' },   // Baixa
-            { x: 6000, y: 180, type: 'star' },     // Alta
-            { x: 7500, y: 300, type: 'potion' },   // Média
-            { x: 8200, y: 220, type: 'star' },     // Quase no final
+            { x: 800, y: 200, type: 'star' },
+            { x: 1500, y: 300, type: 'potion' },
+            { x: 2200, y: 150, type: 'potion' },
+            { x: 3200, y: 280, type: 'star' },
+            { x: 4500, y: 350, type: 'potion' },
+            { x: 6000, y: 180, type: 'star' },
+            { x: 7500, y: 300, type: 'potion' },
+            { x: 8200, y: 220, type: 'star' },
         ];
         
+        // Adiciona cada item ao jogo
         itemData.forEach(item => {
             if (item.type === 'star') {
                 const star = this.stars.create(item.x, item.y, 'estrela');
@@ -173,47 +197,48 @@ export class GameScene extends Phaser.Scene {
             }
         });
         
-        // Criar inimigos nas plataformas
+        // Cria o grupo de inimigos e coloca-os em vários sitios
         this.enemies = this.physics.add.group();
         this.enemyPositions = [];
         
-        // 5 inimigos distribuídos em diferentes plataformas
+        // Posições dos 6 inimigos distribuídos pelo mapa
         const enemyData = [
-            { x: 1000, y: 280 },    // Plataforma inicial
-            { x: 1850, y: 290 },    // Plataforma média
-            { x: 3000, y: 260 },    // Plataforma no meio
-            { x: 5500, y: 250 },    // Plataforma alta
-            { x: 7000, y: 270 },    // Plataforma próximo do final
-            { x: 8400, y: 280 },    // Plataforma no final
+            { x: 1000, y: 280 },
+            { x: 1850, y: 290 },
+            { x: 3000, y: 260 },
+            { x: 5500, y: 250 },
+            { x: 7000, y: 270 },
+            { x: 8400, y: 280 },
         ];
         
+        // Cria cada inimigo
         enemyData.forEach(enemy => {
             const monster = this.enemies.create(enemy.x, enemy.y, 'monster');
-            monster.setScale(2); // Aumentado bastante (de 0.3 para 2)
+            monster.setScale(2);
             monster.setImmovable(true);
             monster.setVelocity(0, 0);
             monster.body.setAllowGravity(false);
             this.enemyPositions.push({ x: enemy.x, y: enemy.y, sprite: monster });
         });
         
-        // Criar bandeira na última plataforma
+        // Cria a bandeira no final do mapa (objetivo do jogo)
         this.flag = this.physics.add.sprite(8900, 300, 'flag');
-        this.flag.setScale(0.4); // Pequena
+        this.flag.setScale(0.4);
         this.flag.setImmovable(true);
         this.flag.body.setAllowGravity(false);
         this.flagPosition = { x: 8900, y: 210 };
         
-        // Colisão com inimigos (Perde 10 pontos)
+        // Define o que acontece quando o jogador toca num inimigo
         this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
         
-        // Colisão com bandeira (Win)
+        // Define o que acontece quando o jogador toca na bandeira
         this.physics.add.overlap(this.player, this.flag, this.reachFlag, null, this);
         
-        // Colisões com items
+        // Define o que acontece quando o jogador recolhe itens
         this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
         this.physics.add.overlap(this.player, this.potions, this.collectPotion, null, this);
 
-        // Colisão do player com plataforma inicial e outras plataformas
+        // Permite que o jogador possa estar em pé nas plataformas
         this.physics.add.collider(this.player, this.startPlatform);
         this.platformCollider = this.physics.add.collider(this.player, this.platforms);
 
@@ -223,16 +248,16 @@ export class GameScene extends Phaser.Scene {
     }
 
     hitEnemy(player, enemy) {
-        // Destruir o inimigo após tocar
+        // Quando o jogador toca num inimigo, o inimigo desaparece
         enemy.destroy();
         
-        // Perder 10 pontos (não pode ficar negativo)
+        // Perde 10 pontos (mas não fica negativo)
         this.score = Math.max(0, this.score - 10);
         this.scoreText.setText(`Score: ${this.score}`);
     }
 
     reachFlag(player, flag) {
-        // Jogador chegou à bandeira - WIN!
+        // Quando chega à bandeira, o jogador ganha (WIN)
         if (!this.gameOver) {
             this.gameOver = true;
             this.showWin();
@@ -240,6 +265,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     collectStar(player, star) {
+        // Apanha a estrela e ganha 20 pontos
         star.destroy();
         this.score += 20;
         this.scoreText.setText(`Score: ${this.score}`);
@@ -247,21 +273,22 @@ export class GameScene extends Phaser.Scene {
     }
 
     showWin() {
+        // Para o jogador de se mover
         this.player.setVelocity(0, 0);
         this.timerText.setText('');
         this.scoreText.setText('');
         
         const { width, height } = this.scale;
         
-        // Overlay escuro
+        // Coloca um fundo escuro 
         const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0);
         
-        // Texto ganhou
+        // Mostra a imagem "ganhou"
         this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
         
-        // Mostrar pontuação final
+        // Mostra a pontuação final
         this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
             fontSize: '32px',
             fill: '#ffffff',
@@ -269,11 +296,12 @@ export class GameScene extends Phaser.Scene {
             align: 'center'
         }).setOrigin(0.5, 0).setScrollFactor(0);
         
-        // Botão "Recomeçar" com imagem (esquerda)
+        // Botão para recomeçar o jogo (esquerda)
         const restartButton = this.add.image(width / 2 - 80, height / 2 + 120, 'btnRecomecar').setScale(0.4);
         restartButton.setScrollFactor(0);
         restartButton.setInteractive({ useHandCursor: true });
         
+        // Efeito de hover no botão
         restartButton.on('pointerover', () => {
             restartButton.setScale(0.45);
         });
@@ -282,11 +310,12 @@ export class GameScene extends Phaser.Scene {
             restartButton.setScale(0.4);
         });
         
+        // Quando clicar no botão, recomeça o jogo
         restartButton.on('pointerdown', () => {
             this.scene.restart();
         });
 
-        // Botão "menu" com imagem (direita)
+        // Botão para voltar ao menu (direita)
         const menuButton = this.add.image(width / 2 + 80, height / 2 + 120, 'btnMenu').setScale(0.4);
         menuButton.setScrollFactor(0);
         menuButton.setInteractive({ useHandCursor: true });
@@ -303,21 +332,22 @@ export class GameScene extends Phaser.Scene {
     }
 
     showGameOver() {
+        // Para o jogador de se mover
         this.player.setVelocity(0, 0);
         this.timerText.setText('');
         this.scoreText.setText('');
         
         const { width, height } = this.scale;
         
-        // Overlay escuro
+        // Coloca um fundo escuro
         const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0);
         
-        // Texto "GAME OVER"
+        // Mostra a imagem "game over"
         this.add.image(width / 2, height / 2 - 80, 'game_over').setScale(1.5).setOrigin(0.5, 0.5).setScrollFactor(0);
         
-        // Mostrar pontuação final
+        // Mostra a pontuação final
         this.add.text(width / 2, height / 2 + 30 , `Pontuação: ${this.score}`, {
             fontSize: '32px',
             fill: '#ffffff',
@@ -325,11 +355,12 @@ export class GameScene extends Phaser.Scene {
             align: 'center'
         }).setOrigin(0.5, 0).setScrollFactor(0);
         
-        // Botão "Recomeçar" com imagem (esquerda)
+        // Botão para recomeçar o jogo (esquerda)
         const restartButton = this.add.image(width / 2 - 80, height / 2 + 120, 'btnRecomecar').setScale(0.4);
         restartButton.setScrollFactor(0);
         restartButton.setInteractive({ useHandCursor: true });
         
+        // Efeito de hover no botão
         restartButton.on('pointerover', () => {
             restartButton.setScale(0.45);
         });
@@ -338,11 +369,12 @@ export class GameScene extends Phaser.Scene {
             restartButton.setScale(0.4);
         });
         
+        // Quando clicar no botão, recomeça o jogo
         restartButton.on('pointerdown', () => {
             this.scene.restart();
         });
 
-        // Botão "menu" com imagem (direita)
+        // Botão para voltar ao menu (direita)
         const menuButton = this.add.image(width / 2 + 80, height / 2 + 120, 'btnMenu').setScale(0.4);
         menuButton.setScrollFactor(0);
         menuButton.setInteractive({ useHandCursor: true });
@@ -358,6 +390,7 @@ export class GameScene extends Phaser.Scene {
         }); 
     }
 
+    // Quando o jogador apanha uma poção
     collectPotion(player, potion) {
         potion.destroy();
         this.score += 10;
@@ -365,21 +398,22 @@ export class GameScene extends Phaser.Scene {
         this.checkWin();
     }
 
+    // Verifica se o jogador ganhou 
     checkWin() {
         if (this.score >= 100 && !this.gameOver) {
             this.gameOver = true;
             this.player.setVelocity(0, 0);
             
-            // Criar overlay escuro
+            // Coloca um fundo escuro 
             const { width, height } = this.scale;
             const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
                 .setOrigin(0.5, 0.5)
                 .setScrollFactor(0);
             
-            // Texto ganhou
+            // Mostra a imagem de ganhou
             this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
             
-            // Mostrar pontuação final
+            // Mostra a pontuação final
             this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
                 fontSize: '32px',
                 fill: '#ffffff',
@@ -387,7 +421,7 @@ export class GameScene extends Phaser.Scene {
                 align: 'center'
             }).setOrigin(0.5, 0).setScrollFactor(0);
             
-            // Botão "Recomeçar" (esquerda)
+            // Botão para recomeçar (esquerda)
             const restartButton = this.add.image(width / 2 - 80, height / 2 + 120, 'btnRecomecar').setScale(0.4);
 
             restartButton.setInteractive({ useHandCursor: true });
@@ -404,7 +438,7 @@ export class GameScene extends Phaser.Scene {
                 this.scene.restart();
             });
 
-            // Botão "menu" (direita)
+            // Botão para menu (direita)
             const menuButton = this.add.image(width / 2 + 80, height / 2 + 120, 'btnMenu').setScale(0.4);      
 
             menuButton.setInteractive({ useHandCursor: true });
@@ -423,7 +457,9 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    // Cria as animações do mago (andar à esquerda, à direita, parado, saltar)
     createAnimations() {
+        // andar para a esquerda
         this.anims.create({
             key: 'left',
             frames: this.anims.generateFrameNumbers('wizard', { frames: [9, 10, 11] }),
@@ -431,6 +467,7 @@ export class GameScene extends Phaser.Scene {
             repeat: -1
         });
 
+        // andar para a direita
         this.anims.create({
             key: 'right',
             frames: this.anims.generateFrameNumbers('wizard', { frames: [3, 4, 5] }),
@@ -438,20 +475,20 @@ export class GameScene extends Phaser.Scene {
             repeat: -1
         });
 
+        // parado (sem movimento)
         this.anims.create({
             key: 'turn',
             frames: [{ key: 'wizard', frame: 7 }],
             frameRate: 20
         });
 
+        //saltar para cima
         this.anims.create({
             key: 'up',
             frames: this.anims.generateFrameNumbers('wizard', { frames: [7] }),
             frameRate: 10,
             repeat: -1
         });
-
-        
     }
 
    
@@ -460,38 +497,38 @@ export class GameScene extends Phaser.Scene {
         const centerX = width / 2;
         const rightEdge = width - 50;
         
-        // Reposicionar plataforma inicial baseado no scroll
+        // Move a plataforma inicial conforme o scroll do mapa
         this.startPlatform.x = 80 - this.scrollX;
         
-        // Reposicionar plataformas baseado no scroll para mantê-las fixas no mundo
+        // Atualiza a posição de todas as plataformas no ecrã
         this.platformData.forEach((data, index) => {
             const platform = this.platforms.children.entries[index];
             platform.x = data.x - this.scrollX;
             platform.y = data.y;
         });
         
-        // Reposicionar items baseado no scroll
+        // Atualiza a posição de todos os items (estrelas e poções) no ecrã
         this.itemPositions.forEach(item => {
             item.sprite.x = item.x - this.scrollX;
             item.sprite.y = item.y;
         });
-        // Reposicionar bandeira baseado no scroll
+        
+        // Atualiza a posição da bandeira no ecrã
         this.flag.x = this.flagPosition.x - this.scrollX;
         this.flag.y = this.flagPosition.y;
         
-
-        // Reposicionar inimigos baseado no scroll
+        // Atualiza a posição de todos os inimigos no ecrã
         this.enemyPositions.forEach(enemy => {
             enemy.sprite.x = enemy.x - this.scrollX;
             enemy.sprite.y = enemy.y;
         });
         
-        // Forçar recalculação de colisões (Phaser não faz isto automaticamente para corpos imóveis)
+        // Atualiza as colisões das plataformas (importante para plataformas que não se mexem)
         this.platforms.children.entries.forEach(platform => {
             platform.body.updateFromGameObject();
         });
         
-        // Verificar se o player caiu (GAME OVER)
+        // Verifica se o jogador caiu (game over)
         const { height } = this.scale;
         if (this.player.y > height && !this.gameOver) {
             this.gameOver = true;
@@ -499,83 +536,87 @@ export class GameScene extends Phaser.Scene {
             return;
         }
         
-        // Atualizar tempo e verificar se ultrapassou o limite
+        // Calcula e mostra o tempo restante
         const elapsedTime = this.time.now - this.startTime;
         const remainingTime = Math.max(0, Math.floor((this.timeLimit - elapsedTime) / 1000));
         this.timerText.setText(`${remainingTime}s`);
         
-        // Game over por tempo
+        // Verifica se o tempo acabou (game over)
         if (elapsedTime > this.timeLimit && !this.gameOver) {
             this.gameOver = true;
             this.showGameOver();
             return;
         }
         
-        // Se game over, não continua a processar o resto do update
+        // Se já perdeu ou ganhou, não faz mais nada
         if (this.gameOver) {
             return;
         }
         
+        // Quando a seta para a direita está pressionada
         if (this.cursors.right.isDown) {
-
           
             if (this.player.x < centerX && this.scrollX === 0) {
+                // Começo do mapa - mover o mago
                 this.player.setVelocityX(100);
                 this.player.anims.play('right', true);
             }
             else if (this.scrollX < this.worldEnd) {
-                //Mover o mundo enquanto o wizard está no centro
-                this.player.setVelocityX(0);  // wizard parado no centro
-                this.scrollX += 2;           // mover mundo mais lentamente
+                // Meio do mapa - mover o mapa em vez do mago (mantém no centro)
+                this.player.setVelocityX(0);
+                this.scrollX += 2;
                 this.player.anims.play('right', true);
                 this.updateWorldScroll();
             }
             else if (this.player.x < rightEdge) {
-                // O mundo acabou mas o wizard anda até ao fim do ecrã
+                // Fim do mapa - mover o mago até à borda
                 this.player.setVelocityX(100);
                 this.player.anims.play('right', true);
             }
             else {
+                // Chegou ao fim do ecrã - parar
                 this.player.setVelocityX(0);
                 this.player.anims.play('turn');
             }
         }
        
+        // Quando a seta para a esquerda está pressionada
         else if (this.cursors.left.isDown) {
 
-            // voltar fisicamente até ao centro se scroll acabou
             if (this.player.x > centerX && this.scrollX === this.worldEnd) {
+                // Fim do mapa - mover o mago para o centro
                 this.player.setVelocityX(-100);
                 this.player.anims.play('left', true);
             }
 
-            // scroll para trás
             else if (this.scrollX > 0) {
+                // Meio do mapa - mover o mapa para trás
                 this.player.setVelocityX(0);
                 this.scrollX -= 2;
                 this.player.anims.play('left', true);
                 this.updateWorldScroll();
             }
 
-            // normal até à borda esquerda
             else if (this.player.x > 50) {
+                // Começo do mapa - mover o mago
                 this.player.setVelocityX(-100);
                 this.player.anims.play('left', true);
             }
 
             else {
-                // parado no início
+                // Chegou ao início - parar
                 this.player.setVelocityX(0);
                 this.player.anims.play('turn');
             }
         }
 
+        // Se não pressionar nada, o mago fica parado
         else {
             this.player.setVelocityX(0);
             this.player.anims.play('turn');
         }
 
-        // Salto - independente do movimento horizontal
+        // Quando pressiona a seta para cima e está no chão - SALTO!
         if (this.cursors.up.isDown && this.player.body.touching.down) {
             this.player.setVelocityY(-420);
         }
@@ -584,8 +625,8 @@ export class GameScene extends Phaser.Scene {
     }
 
    
+    // Atualiza o fundo para ter efeito de parallax (fundo move mais lentamente)
     updateWorldScroll() {
-        this.background.tilePositionX = this.scrollX * 0.2; // parallax
-        // As plataformas ficam fixas no mundo, não se mexem com o scroll
+        this.background.tilePositionX = this.scrollX * 0.2;
     }
 }
