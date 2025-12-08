@@ -7,6 +7,9 @@ export class GameScene extends Phaser.Scene {
     preload() {
         this.load.image('Fundo', 'assets/fundo.png');
         this.load.image('rock_tile', 'assets/rock.png');
+        this.load.image('estrela', 'assets/estrela.png');
+        this.load.image('pocao', 'assets/pocao.png');
+        this.load.image('btnVoltar', 'assets/voltar.png');
         this.load.spritesheet('wizard', 'assets/wizard.png',
             { frameWidth: 32, 
             frameHeight: 36 }
@@ -25,7 +28,7 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.existing(this.ground, true);
 
         // Quantidade de scroll (60 segundos ≈ 1600px)
-        this.worldEnd = 9600;
+        this.worldEnd = 14400;
         this.scrollX = 0;
         
         // Sistema de tempo
@@ -38,6 +41,15 @@ export class GameScene extends Phaser.Scene {
             fontFamily: 'Arial',
             align: 'center'
         }).setOrigin(0.5, 0).setScrollFactor(0); // Não segue o scroll da câmara
+        
+        // Sistema de pontos
+        this.score = 0;
+        this.scoreText = this.add.text(width - 16, 16, 'Score: 0', {
+            fontSize: '32px',
+            fill: '#ffffff',
+            fontFamily: 'Arial',
+            align: 'right'
+        }).setOrigin(1, 0).setScrollFactor(0); // Não segue o scroll da câmara
 
         const playerY = groundY - 18; // altura do wizard (metade da altura da sprite)
         this.player = this.physics.add.sprite(80, playerY, 'wizard', 7);
@@ -116,6 +128,44 @@ export class GameScene extends Phaser.Scene {
             platform.refreshBody();
         });
 
+        // Criar grupos de items (estrelas e poções)
+        this.stars = this.physics.add.group();
+        this.potions = this.physics.add.group();
+        this.itemPositions = []; // Guardar posições originais dos items
+        
+        // Distribuir 3 estrelas (20 pontos cada) e 4 poções (10 pontos cada) com alturas variadas
+        const itemData = [
+            { x: 800, y: 200, type: 'star' },      // Alta
+            { x: 1500, y: 320, type: 'potion' },   // Média-baixa
+            { x: 2200, y: 150, type: 'potion' },   // Muito alta
+            { x: 3200, y: 280, type: 'star' },     // Média
+            { x: 4500, y: 350, type: 'potion' },   // Baixa
+            { x: 6000, y: 180, type: 'star' },     // Alta
+            { x: 7500, y: 300, type: 'potion' },   // Média
+        ];
+        
+        itemData.forEach(item => {
+            if (item.type === 'star') {
+                const star = this.stars.create(item.x, item.y, 'estrela');
+                star.setScale(0.25); 
+                star.setImmovable(true);
+                star.setVelocity(0, 0);
+                star.body.setAllowGravity(false);
+                this.itemPositions.push({ x: item.x, y: item.y, sprite: star });
+            } else {
+                const potion = this.potions.create(item.x, item.y, 'pocao');
+                potion.setScale(0.25); 
+                potion.setImmovable(true);
+                potion.setVelocity(0, 0);
+                potion.body.setAllowGravity(false);
+                this.itemPositions.push({ x: item.x, y: item.y, sprite: potion });
+            }
+        });
+        
+        // Colisões com items
+        this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
+        this.physics.add.overlap(this.player, this.potions, this.collectPotion, null, this);
+
         // Colisão do player com o chão e plataformas
         this.physics.add.collider(this.player, this.ground);
         this.platformCollider = this.physics.add.collider(this.player, this.platforms);
@@ -125,6 +175,66 @@ export class GameScene extends Phaser.Scene {
         this.createAnimations();
     }
 
+    collectStar(player, star) {
+        star.destroy();
+        this.score += 20;
+        this.scoreText.setText(`Score: ${this.score}`);
+        this.checkWin();
+    }
+
+    collectPotion(player, potion) {
+        potion.destroy();
+        this.score += 10;
+        this.scoreText.setText(`Score: ${this.score}`);
+        this.checkWin();
+    }
+
+    checkWin() {
+        if (this.score >= 100 && !this.gameOver) {
+            this.gameOver = true;
+            this.player.setVelocity(0, 0);
+            
+            // Criar overlay escuro
+            const { width, height } = this.scale;
+            const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+                .setOrigin(0.5, 0.5)
+                .setScrollFactor(0);
+            
+            // Texto "YOU WIN!"
+            this.add.text(width / 2, height / 2 - 80, 'YOU WIN!', {
+                fontSize: '80px',
+                fill: '#00ff00',
+                fontFamily: 'Arial',
+                fontStyle: 'bold',
+                align: 'center'
+            }).setOrigin(0.5, 0.5).setScrollFactor(0);
+            
+            // Mostrar pontuação final
+            this.add.text(width / 2, height / 2, `Pontuação Final: ${this.score}`, {
+                fontSize: '32px',
+                fill: '#ffffff',
+                fontFamily: 'Arial',
+                align: 'center'
+            }).setOrigin(0.5, 0.5).setScrollFactor(0);
+            
+            // Botão "Recomeçar"
+            const restartButton = this.add.image(width / 2 , height / 1.15, 'btnVoltar').setOrigin(0.5, 0.5).setScale(0.3);
+
+            restartButton.setInteractive({ useHandCursor: true });
+            
+            restartButton.on('pointerover', () => {
+                restartButton.setStyle({ fill: '#ffff00' });
+            });
+            
+            restartButton.on('pointerout', () => {
+                restartButton.setStyle({ fill: '#ffffff' });
+            });
+            
+            restartButton.on('pointerdown', () => {
+                this.scene.restart();
+            });
+        }
+    }
 
     createAnimations() {
         this.anims.create({
@@ -168,6 +278,12 @@ export class GameScene extends Phaser.Scene {
             const platform = this.platforms.children.entries[index];
             platform.x = data.x - this.scrollX;
             platform.y = data.y;
+        });
+        
+        // Reposicionar items baseado no scroll
+        this.itemPositions.forEach(item => {
+            item.sprite.x = item.x - this.scrollX;
+            item.sprite.y = item.y;
         });
         
         // Forçar recalculação de colisões (Phaser não faz isto automaticamente para corpos imóveis)
