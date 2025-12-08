@@ -5,13 +5,15 @@ export class BootScene extends Phaser.Scene {
     }   
 
     preload() {
-        // Load any assets needed for the boot scene here
-        this.load.image('ceu', 'assets/ceu.jpg');
 
+        this.load.image('Fundo', 'assets/ceu.png');
+        this.load.image('rock_tile', 'assets/rock.png');
     }
 
     create() {
-        // Start the Start scene after booting
-        this.scene.start('Start');
+        
+
+        // Inicia a cena de Jogo/Start
+        this.scene.start('GameScene');
     }
 }
