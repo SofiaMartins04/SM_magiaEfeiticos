@@ -1,4 +1,6 @@
 import { BootScene } from './scenes/bootscene.js';
+import { HomeScene } from './scenes/homescene.js';
+import { RulesScene } from './scenes/rulesscene.js';
 import { GameScene } from './scenes/gamescene.js';
 
 
@@ -19,6 +21,8 @@ const config = {
 
     scene: [
         BootScene,
+        HomeScene,
+        RulesScene,
         GameScene
     
     ],
@@ -30,4 +34,3 @@ const config = {
 }
 
 new Phaser.Game(config);
-            

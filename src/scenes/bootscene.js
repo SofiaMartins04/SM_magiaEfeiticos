@@ -6,14 +6,14 @@ export class BootScene extends Phaser.Scene {
 
     preload() {
 
-        this.load.image('Fundo', 'assets/ceu.png');
+        this.load.image('Fundo', 'assets/fundo.png');
         this.load.image('rock_tile', 'assets/rock.png');
     }
 
     create() {
         
 
-        // Inicia a cena de Jogo/Start
-        this.scene.start('GameScene');
+        // Inicia a cena de Home
+        this.scene.start('HomeScene');
     }
 }

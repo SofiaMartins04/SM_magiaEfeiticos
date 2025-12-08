@@ -7,7 +7,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('Fundo', 'assets/ceu.png');
+        this.load.image('Fundo', 'assets/fundo.png');
         this.load.image('rock_tile', 'assets/rock.png');
         this.load.spritesheet('wizard', 'assets/wizard.png',
             { frameWidth: 32, 
