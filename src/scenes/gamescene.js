@@ -32,12 +32,12 @@ export class GameScene extends Phaser.Scene {
         this.startPlatform.body.setAllowGravity(false);
         this.startPlatform.refreshBody();
 
-        // Quantidade de scroll (60 segundos ≈ 1600px)
-        this.worldEnd = 14400;
+        // Quantidade de scroll (10 segundos ≈ 1600px)
+        this.worldEnd = 9200;
         this.scrollX = 0;
         
         // Sistema de tempo
-        this.timeLimit = 90000; // 90 segundos em milissegundos
+        this.timeLimit = 60000; // 60 segundos em milissegundos
         this.startTime = this.time.now;
         this.gameOver = false;
         this.timerText = this.add.text(width / 2, 16, '', {
@@ -45,7 +45,7 @@ export class GameScene extends Phaser.Scene {
             fill: '#ffffff',
             fontFamily: 'Arial',
             align: 'center'
-        }).setOrigin(0.5, 0).setScrollFactor(0); // Não segue o scroll da câmara
+        }).setOrigin(0.5, 0).setScrollFactor(0); 
         
         // Sistema de pontos
         this.score = 0;
@@ -54,17 +54,17 @@ export class GameScene extends Phaser.Scene {
             fill: '#ffffff',
             fontFamily: 'Arial',
             align: 'right'
-        }).setOrigin(1, 0).setScrollFactor(0); // Não segue o scroll da câmara
+        }).setOrigin(1, 0).setScrollFactor(0); 
 
-        const playerY = groundY - 18; // altura do wizard (metade da altura da sprite)
+        const playerY = groundY - 18; 
         this.player = this.physics.add.sprite(80, playerY, 'wizard', 7);
-        this.player.setScale(2); // Aumentado 70% (de 2 para 3.4)
+        this.player.setScale(2); 
         this.player.setOrigin(0.5, 1); // Origin no pé do boneco
-        this.player.setBounce(0, 0); // Sem bounce
-        this.player.setDrag(0); // Sem resistência
-        this.player.setCollideWorldBounds(false); // Não bloquear nas bordas
-        this.player.setGravityY(0); // Usar a gravidade padrão do mundo
-        this.player.body.setSize(20, 35); // Ajustar hitbox ao tamanho real do wizard
+        this.player.setBounce(0, 0);
+        this.player.setDrag(0); 
+        this.player.setCollideWorldBounds(false); 
+        this.player.setGravityY(0); 
+        this.player.body.setSize(20, 35); 
 
         // Plataformas para saltar - padrões variados do início ao fim do jogo
         this.platforms = this.physics.add.group();
@@ -141,12 +141,13 @@ export class GameScene extends Phaser.Scene {
         // Distribuir 3 estrelas (20 pontos cada) e 4 poções (10 pontos cada) com alturas variadas
         const itemData = [
             { x: 800, y: 200, type: 'star' },      // Alta
-            { x: 1500, y: 320, type: 'potion' },   // Média-baixa
+            { x: 1500, y: 300, type: 'potion' },   // Média-baixa
             { x: 2200, y: 150, type: 'potion' },   // Muito alta
             { x: 3200, y: 280, type: 'star' },     // Média
             { x: 4500, y: 350, type: 'potion' },   // Baixa
             { x: 6000, y: 180, type: 'star' },     // Alta
             { x: 7500, y: 300, type: 'potion' },   // Média
+            { x: 8200, y: 220, type: 'star' },     // Quase no final
         ];
         
         itemData.forEach(item => {
@@ -173,11 +174,12 @@ export class GameScene extends Phaser.Scene {
         
         // 5 inimigos distribuídos em diferentes plataformas
         const enemyData = [
-            { x: 600, y: 280 },    // Plataforma inicial
-            { x: 1800, y: 260 },   // Plataforma média
-            { x: 3500, y: 280 },   // Plataforma no meio
-            { x: 5500, y: 250 },   // Plataforma alta
-            { x: 8000, y: 270 },   // Plataforma no final
+            { x: 1000, y: 280 },    // Plataforma inicial
+            { x: 1850, y: 290 },    // Plataforma média
+            { x: 3000, y: 260 },    // Plataforma no meio
+            { x: 5500, y: 250 },    // Plataforma alta
+            { x: 7000, y: 270 },    // Plataforma próximo do final
+            { x: 8400, y: 280 },    // Plataforma no final
         ];
         
         enemyData.forEach(enemy => {
