@@ -12,6 +12,10 @@ export class GameScene extends Phaser.Scene {
         this.load.image('btnVoltar', 'assets/voltar.png');
         this.load.image('monster', 'assets/moster.png');
         this.load.image('flag', 'assets/flag.png');
+        this.load.image('game_over', 'assets/game_over.png');
+        this.load.image('win', 'assets/win.png');
+        this.load.image('btnRecomecar', 'assets/recomecar.png');
+        this.load.image('btnMenu', 'assets/menu.png');
         this.load.spritesheet('wizard', 'assets/wizard.png',
             { frameWidth: 32, 
             frameHeight: 36 }
@@ -50,8 +54,8 @@ export class GameScene extends Phaser.Scene {
         
         // Sistema de pontos
         this.score = 0;
-        this.scoreText = this.add.text(width - 16, 16, 'Score: 0', {
-            fontSize: '32px',
+        this.scoreText = this.add.text(width - 16, 16, 'Pontuação: 0', {
+            fontSize: '26px',
             fill: '#ffffff',
             fontFamily: 'Arial',
             align: 'right'
@@ -254,39 +258,48 @@ export class GameScene extends Phaser.Scene {
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0);
         
-        // Texto "YOU WIN!"
-        this.add.text(width / 2, height / 2 - 80, 'YOU WIN!', {
-            fontSize: '80px',
-            fill: '#00ff00',
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        // Texto ganhou
+        this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
         
         // Mostrar pontuação final
-        this.add.text(width / 2, height / 2, `Pontuação Final: ${this.score}`, {
+        this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
             fontSize: '32px',
             fill: '#ffffff',
             fontFamily: 'Arial',
             align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        }).setOrigin(0.5, 0).setScrollFactor(0);
         
-        // Botão "Recomeçar" com imagem
-        const restartButton = this.add.image(width / 2, height / 2 + 80, 'btnVoltar').setScale(0.3);
+        // Botão "Recomeçar" com imagem (esquerda)
+        const restartButton = this.add.image(width / 2 - 80, height / 2 + 120, 'btnRecomecar').setScale(0.4);
         restartButton.setScrollFactor(0);
         restartButton.setInteractive({ useHandCursor: true });
         
         restartButton.on('pointerover', () => {
-            restartButton.setScale(0.35);
+            restartButton.setScale(0.45);
         });
         
         restartButton.on('pointerout', () => {
-            restartButton.setScale(0.3);
+            restartButton.setScale(0.4);
         });
         
         restartButton.on('pointerdown', () => {
             this.scene.restart();
         });
+
+        // Botão "menu" com imagem (direita)
+        const menuButton = this.add.image(width / 2 + 80, height / 2 + 120, 'btnMenu').setScale(0.4);
+        menuButton.setScrollFactor(0);
+        menuButton.setInteractive({ useHandCursor: true });
+
+        menuButton.on('pointerover', () => {
+            menuButton.setScale(0.45);
+        });
+        menuButton.on('pointerout', () => {
+            menuButton.setScale(0.4);
+        });
+        menuButton.on('pointerdown', () => {
+            this.scene.start('HomeScene');
+        }); 
     }
 
     showGameOver() {
@@ -302,38 +315,47 @@ export class GameScene extends Phaser.Scene {
             .setScrollFactor(0);
         
         // Texto "GAME OVER"
-        this.gameOverText = this.add.text(width / 2, height / 2 - 80, 'GAME OVER', {
-            fontSize: '80px',
-            fill: '#ff0000',
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        this.add.image(width / 2, height / 2 - 80, 'game_over').setScale(1.5).setOrigin(0.5, 0.5).setScrollFactor(0);
         
         // Mostrar pontuação final
-        this.add.text(width / 2, height / 2, `Pontuação: ${this.score}`, {
+        this.add.text(width / 2, height / 2 + 30 , `Pontuação: ${this.score}`, {
             fontSize: '32px',
             fill: '#ffffff',
             fontFamily: 'Arial',
             align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        }).setOrigin(0.5, 0).setScrollFactor(0);
         
-        // Botão "Recomeçar" com imagem
-        const restartButton = this.add.image(width / 2, height / 2 + 80, 'btnVoltar').setScale(0.3);
+        // Botão "Recomeçar" com imagem (esquerda)
+        const restartButton = this.add.image(width / 2 - 80, height / 2 + 120, 'btnRecomecar').setScale(0.4);
         restartButton.setScrollFactor(0);
         restartButton.setInteractive({ useHandCursor: true });
         
         restartButton.on('pointerover', () => {
-            restartButton.setScale(0.35);
+            restartButton.setScale(0.45);
         });
         
         restartButton.on('pointerout', () => {
-            restartButton.setScale(0.3);
+            restartButton.setScale(0.4);
         });
         
         restartButton.on('pointerdown', () => {
             this.scene.restart();
         });
+
+        // Botão "menu" com imagem (direita)
+        const menuButton = this.add.image(width / 2 + 80, height / 2 + 120, 'btnMenu').setScale(0.4);
+        menuButton.setScrollFactor(0);
+        menuButton.setInteractive({ useHandCursor: true });
+
+        menuButton.on('pointerover', () => {
+            menuButton.setScale(0.45);
+        });
+        menuButton.on('pointerout', () => {
+            menuButton.setScale(0.4);
+        });
+        menuButton.on('pointerdown', () => {
+            this.scene.start('HomeScene');
+        }); 
     }
 
     collectPotion(player, potion) {
@@ -354,38 +376,49 @@ export class GameScene extends Phaser.Scene {
                 .setOrigin(0.5, 0.5)
                 .setScrollFactor(0);
             
-            // Texto "YOU WIN!"
-            this.add.text(width / 2, height / 2 - 80, 'YOU WIN!', {
-                fontSize: '80px',
-                fill: '#00ff00',
-                fontFamily: 'Arial',
-                fontStyle: 'bold',
-                align: 'center'
-            }).setOrigin(0.5, 0.5).setScrollFactor(0);
+            // Texto ganhou
+            this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
             
             // Mostrar pontuação final
-            this.add.text(width / 2, height / 2, `Pontuação Final: ${this.score}`, {
+            this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
                 fontSize: '32px',
                 fill: '#ffffff',
                 fontFamily: 'Arial',
                 align: 'center'
-            }).setOrigin(0.5, 0.5).setScrollFactor(0);
+            }).setOrigin(0.5, 0).setScrollFactor(0);
             
-            // Botão "Recomeçar"
-            const restartButton = this.add.image(width / 2 , height / 1.15, 'btnVoltar').setOrigin(0.5, 0.5).setScale(0.3);
+            // Botão "Recomeçar" (esquerda)
+            const restartButton = this.add.image(width / 2 - 80, height / 2 + 120, 'btnRecomecar').setScale(0.4);
 
             restartButton.setInteractive({ useHandCursor: true });
             
             restartButton.on('pointerover', () => {
-                restartButton.setStyle({ fill: '#ffff00' });
+                 restartButton.setScale(0.45);
             });
             
             restartButton.on('pointerout', () => {
-                restartButton.setStyle({ fill: '#ffffff' });
+                 restartButton.setScale(0.4);
             });
             
             restartButton.on('pointerdown', () => {
                 this.scene.restart();
+            });
+
+            // Botão "menu" (direita)
+            const menuButton = this.add.image(width / 2 + 80, height / 2 + 120, 'btnMenu').setScale(0.4);      
+
+            menuButton.setInteractive({ useHandCursor: true });
+
+            menuButton.on('pointerover', () => {
+                menuButton.setScale(0.45);
+            });
+
+            menuButton.on('pointerout', () => {
+                menuButton.setScale(0.4);
+            });     
+
+            menuButton.on('pointerdown', () => {
+                this.scene.start('HomeScene');
             });
         }
     }
