@@ -81,7 +81,7 @@ export class GameScene extends Phaser.Scene {
             this.scene.start('HomeScene');
         });
 
-        // Cria o jogador 
+        // jogador 
         const playerY = groundY - 18; 
         this.player = this.physics.add.sprite(80, playerY, 'wizard', 7);
         this.player.setScale(2); 
@@ -92,37 +92,37 @@ export class GameScene extends Phaser.Scene {
         this.player.setGravityY(0); 
         this.player.body.setSize(20, 35); 
 
-        // Cria as plataformas em diferentes padrões
+        // Cria as plataformas do mapa
         this.platforms = this.physics.add.group();
         this.platformData = [];
         
         let currentX = 300;
-        // Define vários padrões de plataformas para o jogador seguir (escadas, duplas, etc)
+        // Define vários padrões de plataformas
         const patterns = [
-            // Escada a subir para cima
+            // para cima
             [
                 { dx: 0, dy: 0 },
                 { dx: 140, dy: -25 },
                 { dx: 280, dy: -50 },
                 { dx: 420, dy: -75 }
             ],
-            // Duas plataformas juntas
+            // plataformas juntas
             [
                 { dx: 0, dy: 0 },
                 { dx: 150, dy: 0 }
             ],
-            // Escada a descer para baixo
+            // a descer 
             [
                 { dx: 0, dy: 0 },
                 { dx: 140, dy: 25 },
                 { dx: 280, dy: 50 }
             ],
-            // Duas plataformas juntas novamente
+            // Duas plataformas juntas 
             [
                 { dx: 0, dy: 0 },
                 { dx: 150, dy: 0 }
             ],
-            // Outra escada a subir
+            //  a subir
             [
                 { dx: 0, dy: 0 },
                 { dx: 140, dy: -25 },
@@ -161,12 +161,12 @@ export class GameScene extends Phaser.Scene {
             platform.refreshBody();
         });
 
-        // Cria dois grupos: um para as estrelas e outro para as poções
+        // grupos: as estrelas e as poções
         this.stars = this.physics.add.group();
         this.potions = this.physics.add.group();
         this.itemPositions = [];
         
-        // Coloca as estrelas e poções em vários locais
+        // coloca as estrelas e poções em vários sítios do mapa
         const itemData = [
             { x: 800, y: 200, type: 'star' },
             { x: 1500, y: 300, type: 'potion' },
@@ -178,7 +178,7 @@ export class GameScene extends Phaser.Scene {
             { x: 8200, y: 220, type: 'star' },
         ];
         
-        // Adiciona cada item ao jogo
+        // adiciona cada item ao jogo
         itemData.forEach(item => {
             if (item.type === 'star') {
                 const star = this.stars.create(item.x, item.y, 'estrela');
@@ -228,17 +228,17 @@ export class GameScene extends Phaser.Scene {
         this.flag.body.setAllowGravity(false);
         this.flagPosition = { x: 8900, y: 210 };
         
-        // Define o que acontece quando o jogador toca num inimigo
+        // o jogador toca num inimigo
         this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
         
-        // Define o que acontece quando o jogador toca na bandeira
+        // o jogador toca na bandeira
         this.physics.add.overlap(this.player, this.flag, this.reachFlag, null, this);
         
-        // Define o que acontece quando o jogador recolhe itens
+        // o jogador recolhe itens
         this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
         this.physics.add.overlap(this.player, this.potions, this.collectPotion, null, this);
 
-        // Permite que o jogador possa estar em pé nas plataformas
+        // o jogador possa estar em pé nas plataformas
         this.physics.add.collider(this.player, this.startPlatform);
         this.platformCollider = this.physics.add.collider(this.player, this.platforms);
 
@@ -248,10 +248,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     hitEnemy(player, enemy) {
-        // Quando o jogador toca num inimigo, o inimigo desaparece
+        // o jogador toca num inimigo, o inimigo desaparece
         enemy.destroy();
         
-        // Perde 10 pontos (mas não fica negativo)
+        // Perde 10 pontos
         this.score = Math.max(0, this.score - 10);
         this.scoreText.setText(`Score: ${this.score}`);
     }
@@ -265,7 +265,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     collectStar(player, star) {
-        // Apanha a estrela e ganha 20 pontos
+        // Apanha a estrela
         star.destroy();
         this.score += 20;
         this.scoreText.setText(`Score: ${this.score}`);
@@ -280,7 +280,7 @@ export class GameScene extends Phaser.Scene {
         
         const { width, height } = this.scale;
         
-        // Coloca um fundo escuro 
+        //fundo escuro 
         const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0);
@@ -288,7 +288,7 @@ export class GameScene extends Phaser.Scene {
         // Mostra a imagem "ganhou"
         this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
         
-        // Mostra a pontuação final
+        // Mostra a pontuação 
         this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
             fontSize: '32px',
             fill: '#ffffff',
@@ -339,7 +339,7 @@ export class GameScene extends Phaser.Scene {
         
         const { width, height } = this.scale;
         
-        // Coloca um fundo escuro
+        // fundo escuro
         const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0);
@@ -390,7 +390,7 @@ export class GameScene extends Phaser.Scene {
         }); 
     }
 
-    // Quando o jogador apanha uma poção
+    // o jogador apanha uma poção
     collectPotion(player, potion) {
         potion.destroy();
         this.score += 10;
@@ -404,16 +404,16 @@ export class GameScene extends Phaser.Scene {
             this.gameOver = true;
             this.player.setVelocity(0, 0);
             
-            // Coloca um fundo escuro 
+            // fundo escuro 
             const { width, height } = this.scale;
             const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
                 .setOrigin(0.5, 0.5)
                 .setScrollFactor(0);
             
-            // Mostra a imagem de ganhou
+            // Mostra a imagem ganhou
             this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
             
-            // Mostra a pontuação final
+            // Mostra a pontuação
             this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
                 fontSize: '32px',
                 fill: '#ffffff',
@@ -457,9 +457,9 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    // Cria as animações do mago (andar à esquerda, à direita, parado, saltar)
+    // Cria as animações do wizard
     createAnimations() {
-        // andar para a esquerda
+        // esquerda
         this.anims.create({
             key: 'left',
             frames: this.anims.generateFrameNumbers('wizard', { frames: [9, 10, 11] }),
@@ -467,7 +467,7 @@ export class GameScene extends Phaser.Scene {
             repeat: -1
         });
 
-        // andar para a direita
+        //  direita
         this.anims.create({
             key: 'right',
             frames: this.anims.generateFrameNumbers('wizard', { frames: [3, 4, 5] }),
@@ -475,14 +475,14 @@ export class GameScene extends Phaser.Scene {
             repeat: -1
         });
 
-        // parado (sem movimento)
+        // parado
         this.anims.create({
             key: 'turn',
             frames: [{ key: 'wizard', frame: 7 }],
             frameRate: 20
         });
 
-        //saltar para cima
+        // saltar
         this.anims.create({
             key: 'up',
             frames: this.anims.generateFrameNumbers('wizard', { frames: [7] }),
@@ -500,35 +500,35 @@ export class GameScene extends Phaser.Scene {
         // Move a plataforma inicial conforme o scroll do mapa
         this.startPlatform.x = 80 - this.scrollX;
         
-        // Atualiza a posição de todas as plataformas no ecrã
+        // posição de todas as plataformas no ecrã
         this.platformData.forEach((data, index) => {
             const platform = this.platforms.children.entries[index];
             platform.x = data.x - this.scrollX;
             platform.y = data.y;
         });
         
-        // Atualiza a posição de todos os items (estrelas e poções) no ecrã
+        // posição de todos os items no ecrã
         this.itemPositions.forEach(item => {
             item.sprite.x = item.x - this.scrollX;
             item.sprite.y = item.y;
         });
         
-        // Atualiza a posição da bandeira no ecrã
+        // posição da bandeira no ecrã
         this.flag.x = this.flagPosition.x - this.scrollX;
         this.flag.y = this.flagPosition.y;
         
-        // Atualiza a posição de todos os inimigos no ecrã
+        // posição de todos os inimigos no ecrã
         this.enemyPositions.forEach(enemy => {
             enemy.sprite.x = enemy.x - this.scrollX;
             enemy.sprite.y = enemy.y;
         });
         
-        // Atualiza as colisões das plataformas (importante para plataformas que não se mexem)
+        // colisões das plataformas (importante para plataformas que não se mexem)
         this.platforms.children.entries.forEach(platform => {
             platform.body.updateFromGameObject();
         });
         
-        // Verifica se o jogador caiu (game over)
+        // o jogador caiu (game over)
         const { height } = this.scale;
         if (this.player.y > height && !this.gameOver) {
             this.gameOver = true;
@@ -536,19 +536,18 @@ export class GameScene extends Phaser.Scene {
             return;
         }
         
-        // Calcula e mostra o tempo restante
+        // mostra o tempo restante
         const elapsedTime = this.time.now - this.startTime;
         const remainingTime = Math.max(0, Math.floor((this.timeLimit - elapsedTime) / 1000));
         this.timerText.setText(`${remainingTime}s`);
         
-        // Verifica se o tempo acabou (game over)
+        // o tempo acabou (game over)
         if (elapsedTime > this.timeLimit && !this.gameOver) {
             this.gameOver = true;
             this.showGameOver();
             return;
         }
         
-        // Se já perdeu ou ganhou, não faz mais nada
         if (this.gameOver) {
             return;
         }
@@ -557,24 +556,20 @@ export class GameScene extends Phaser.Scene {
         if (this.cursors.right.isDown) {
           
             if (this.player.x < centerX && this.scrollX === 0) {
-                // Começo do mapa - mover o mago
                 this.player.setVelocityX(100);
                 this.player.anims.play('right', true);
             }
             else if (this.scrollX < this.worldEnd) {
-                // Meio do mapa - mover o mapa em vez do mago (mantém no centro)
                 this.player.setVelocityX(0);
                 this.scrollX += 2;
                 this.player.anims.play('right', true);
                 this.updateWorldScroll();
             }
             else if (this.player.x < rightEdge) {
-                // Fim do mapa - mover o mago até à borda
                 this.player.setVelocityX(100);
                 this.player.anims.play('right', true);
             }
             else {
-                // Chegou ao fim do ecrã - parar
                 this.player.setVelocityX(0);
                 this.player.anims.play('turn');
             }
@@ -584,13 +579,11 @@ export class GameScene extends Phaser.Scene {
         else if (this.cursors.left.isDown) {
 
             if (this.player.x > centerX && this.scrollX === this.worldEnd) {
-                // Fim do mapa - mover o mago para o centro
                 this.player.setVelocityX(-100);
                 this.player.anims.play('left', true);
             }
 
             else if (this.scrollX > 0) {
-                // Meio do mapa - mover o mapa para trás
                 this.player.setVelocityX(0);
                 this.scrollX -= 2;
                 this.player.anims.play('left', true);
@@ -598,13 +591,11 @@ export class GameScene extends Phaser.Scene {
             }
 
             else if (this.player.x > 50) {
-                // Começo do mapa - mover o mago
                 this.player.setVelocityX(-100);
                 this.player.anims.play('left', true);
             }
 
             else {
-                // Chegou ao início - parar
                 this.player.setVelocityX(0);
                 this.player.anims.play('turn');
             }
@@ -625,7 +616,7 @@ export class GameScene extends Phaser.Scene {
     }
 
    
-    // Atualiza o fundo para ter efeito de parallax (fundo move mais lentamente)
+    // Atualiza o fundo conforme o scroll do mapa
     updateWorldScroll() {
         this.background.tilePositionX = this.scrollX * 0.2;
     }
