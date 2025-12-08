@@ -10,6 +10,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('rock_tile', 'assets/rock.png');
         this.load.image('estrela', 'assets/estrela.png');
         this.load.image('pocao', 'assets/pocao.png');
+        
         this.load.image('btnVoltar', 'assets/voltar.png');
         this.load.image('monster', 'assets/moster.png');
         this.load.image('flag', 'assets/flag.png');
@@ -21,6 +22,11 @@ export class GameScene extends Phaser.Scene {
             { frameWidth: 32, 
             frameHeight: 36 }
         );
+
+        this.load.audio('game_over_sound', 'assets/sounds/game_over.mp3');
+        this.load.audio('win_sound', 'assets/sounds/win.mp3');
+        this.load.audio('good_sound', 'assets/sounds/good.mp3');
+        this.load.audio('error_sound', 'assets/sounds/error.mp3');
     }
 
     // Configura o mapa e elementos do jogo
@@ -28,6 +34,10 @@ export class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         this.background = this.add.tileSprite(0,0,width,height,'Fundo').setOrigin(0, 0);
+        this.gameOverSound = this.sound.add('game_over_sound');
+        this.winSound = this.sound.add('win_sound', { volume: 20 });
+        this.goodSound = this.sound.add('good_sound');
+        this.errorSound = this.sound.add('error_sound');
         
         const tileHeight = 32;
         const groundY = height - tileHeight;
@@ -250,6 +260,9 @@ export class GameScene extends Phaser.Scene {
     hitEnemy(player, enemy) {
         // o jogador toca num inimigo, o inimigo desaparece
         enemy.destroy();
+        if (this.errorSound) {
+            this.errorSound.play();
+        }
         
         // Perde 10 pontos
         this.score = Math.max(0, this.score - 10);
@@ -269,6 +282,9 @@ export class GameScene extends Phaser.Scene {
         star.destroy();
         this.score += 20;
         this.scoreText.setText(`Score: ${this.score}`);
+        if (this.goodSound) {
+            this.goodSound.play();
+        }
         this.checkWin();
     }
 
@@ -277,6 +293,9 @@ export class GameScene extends Phaser.Scene {
         this.player.setVelocity(0, 0);
         this.timerText.setText('');
         this.scoreText.setText('');
+        if (this.winSound) {
+            this.winSound.play();
+        }
         
         const { width, height } = this.scale;
         
@@ -336,6 +355,9 @@ export class GameScene extends Phaser.Scene {
         this.player.setVelocity(0, 0);
         this.timerText.setText('');
         this.scoreText.setText('');
+        if (this.gameOverSound) {
+            this.gameOverSound.play();
+        }
         
         const { width, height } = this.scale;
         
@@ -395,6 +417,9 @@ export class GameScene extends Phaser.Scene {
         potion.destroy();
         this.score += 10;
         this.scoreText.setText(`Score: ${this.score}`);
+        if (this.goodSound) {
+            this.goodSound.play();
+        }
         this.checkWin();
     }
 
@@ -403,6 +428,9 @@ export class GameScene extends Phaser.Scene {
         if (this.score >= 100 && !this.gameOver) {
             this.gameOver = true;
             this.player.setVelocity(0, 0);
+                if (this.winSound) {
+                    this.winSound.play();
+                }
             
             // fundo escuro 
             const { width, height } = this.scale;
