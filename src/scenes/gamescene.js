@@ -11,6 +11,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('pocao', 'assets/pocao.png');
         this.load.image('btnVoltar', 'assets/voltar.png');
         this.load.image('monster', 'assets/moster.png');
+        this.load.image('flag', 'assets/flag.png');
         this.load.spritesheet('wizard', 'assets/wizard.png',
             { frameWidth: 32, 
             frameHeight: 36 }
@@ -191,8 +192,18 @@ export class GameScene extends Phaser.Scene {
             this.enemyPositions.push({ x: enemy.x, y: enemy.y, sprite: monster });
         });
         
+        // Criar bandeira na última plataforma
+        this.flag = this.physics.add.sprite(8900, 300, 'flag');
+        this.flag.setScale(0.4); // Pequena
+        this.flag.setImmovable(true);
+        this.flag.body.setAllowGravity(false);
+        this.flagPosition = { x: 8900, y: 210 };
+        
         // Colisão com inimigos (Perde 10 pontos)
         this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
+        
+        // Colisão com bandeira (Win)
+        this.physics.add.overlap(this.player, this.flag, this.reachFlag, null, this);
         
         // Colisões com items
         this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
@@ -216,11 +227,66 @@ export class GameScene extends Phaser.Scene {
         this.scoreText.setText(`Score: ${this.score}`);
     }
 
+    reachFlag(player, flag) {
+        // Jogador chegou à bandeira - WIN!
+        if (!this.gameOver) {
+            this.gameOver = true;
+            this.showWin();
+        }
+    }
+
     collectStar(player, star) {
         star.destroy();
         this.score += 20;
         this.scoreText.setText(`Score: ${this.score}`);
         this.checkWin();
+    }
+
+    showWin() {
+        this.player.setVelocity(0, 0);
+        this.timerText.setText('');
+        this.scoreText.setText('');
+        
+        const { width, height } = this.scale;
+        
+        // Overlay escuro
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+            .setOrigin(0.5, 0.5)
+            .setScrollFactor(0);
+        
+        // Texto "YOU WIN!"
+        this.add.text(width / 2, height / 2 - 80, 'YOU WIN!', {
+            fontSize: '80px',
+            fill: '#00ff00',
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            align: 'center'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        
+        // Mostrar pontuação final
+        this.add.text(width / 2, height / 2, `Pontuação Final: ${this.score}`, {
+            fontSize: '32px',
+            fill: '#ffffff',
+            fontFamily: 'Arial',
+            align: 'center'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        
+        // Botão "Recomeçar" com imagem
+        const restartButton = this.add.image(width / 2, height / 2 + 80, 'btnVoltar').setScale(0.3);
+        restartButton.setScrollFactor(0);
+        restartButton.setInteractive({ useHandCursor: true });
+        
+        restartButton.on('pointerover', () => {
+            restartButton.setScale(0.35);
+        });
+        
+        restartButton.on('pointerout', () => {
+            restartButton.setScale(0.3);
+        });
+        
+        restartButton.on('pointerdown', () => {
+            this.scene.restart();
+        });
     }
 
     showGameOver() {
@@ -376,7 +442,11 @@ export class GameScene extends Phaser.Scene {
             item.sprite.x = item.x - this.scrollX;
             item.sprite.y = item.y;
         });
+        // Reposicionar bandeira baseado no scroll
+        this.flag.x = this.flagPosition.x - this.scrollX;
+        this.flag.y = this.flagPosition.y;
         
+
         // Reposicionar inimigos baseado no scroll
         this.enemyPositions.forEach(enemy => {
             enemy.sprite.x = enemy.x - this.scrollX;
