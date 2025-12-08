@@ -10,6 +10,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('estrela', 'assets/estrela.png');
         this.load.image('pocao', 'assets/pocao.png');
         this.load.image('btnVoltar', 'assets/voltar.png');
+        this.load.image('monster', 'assets/moster.png');
         this.load.spritesheet('wizard', 'assets/wizard.png',
             { frameWidth: 32, 
             frameHeight: 36 }
@@ -24,8 +25,12 @@ export class GameScene extends Phaser.Scene {
         const tileHeight = 32;
         const groundY = height - tileHeight;
 
-        this.ground = this.add.tileSprite(0,groundY,width,tileHeight,'rock_tile').setOrigin(0, 0);
-        this.physics.add.existing(this.ground, true);
+        // Plataforma inicial pequena (apenas onde o jogador começa)
+        this.startPlatform = this.physics.add.sprite(80, groundY, 'rock_tile');
+        this.startPlatform.setScale(2, 1); // Plataforma pequena, do tamanho de 2 tiles
+        this.startPlatform.setImmovable(true);
+        this.startPlatform.body.setAllowGravity(false);
+        this.startPlatform.refreshBody();
 
         // Quantidade de scroll (60 segundos ≈ 1600px)
         this.worldEnd = 14400;
@@ -53,11 +58,11 @@ export class GameScene extends Phaser.Scene {
 
         const playerY = groundY - 18; // altura do wizard (metade da altura da sprite)
         this.player = this.physics.add.sprite(80, playerY, 'wizard', 7);
-        this.player.setScale(2);
+        this.player.setScale(2); // Aumentado 70% (de 2 para 3.4)
         this.player.setOrigin(0.5, 1); // Origin no pé do boneco
         this.player.setBounce(0, 0); // Sem bounce
         this.player.setDrag(0); // Sem resistência
-        this.player.setCollideWorldBounds(true);
+        this.player.setCollideWorldBounds(false); // Não bloquear nas bordas
         this.player.setGravityY(0); // Usar a gravidade padrão do mundo
         this.player.body.setSize(20, 35); // Ajustar hitbox ao tamanho real do wizard
 
@@ -162,12 +167,37 @@ export class GameScene extends Phaser.Scene {
             }
         });
         
+        // Criar inimigos nas plataformas
+        this.enemies = this.physics.add.group();
+        this.enemyPositions = [];
+        
+        // 5 inimigos distribuídos em diferentes plataformas
+        const enemyData = [
+            { x: 600, y: 280 },    // Plataforma inicial
+            { x: 1800, y: 260 },   // Plataforma média
+            { x: 3500, y: 280 },   // Plataforma no meio
+            { x: 5500, y: 250 },   // Plataforma alta
+            { x: 8000, y: 270 },   // Plataforma no final
+        ];
+        
+        enemyData.forEach(enemy => {
+            const monster = this.enemies.create(enemy.x, enemy.y, 'monster');
+            monster.setScale(2); // Aumentado bastante (de 0.3 para 2)
+            monster.setImmovable(true);
+            monster.setVelocity(0, 0);
+            monster.body.setAllowGravity(false);
+            this.enemyPositions.push({ x: enemy.x, y: enemy.y, sprite: monster });
+        });
+        
+        // Colisão com inimigos (Perde 10 pontos)
+        this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
+        
         // Colisões com items
         this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
         this.physics.add.overlap(this.player, this.potions, this.collectPotion, null, this);
 
-        // Colisão do player com o chão e plataformas
-        this.physics.add.collider(this.player, this.ground);
+        // Colisão do player com plataforma inicial e outras plataformas
+        this.physics.add.collider(this.player, this.startPlatform);
         this.platformCollider = this.physics.add.collider(this.player, this.platforms);
 
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -175,11 +205,67 @@ export class GameScene extends Phaser.Scene {
         this.createAnimations();
     }
 
+    hitEnemy(player, enemy) {
+        // Destruir o inimigo após tocar
+        enemy.destroy();
+        
+        // Perder 10 pontos (não pode ficar negativo)
+        this.score = Math.max(0, this.score - 10);
+        this.scoreText.setText(`Score: ${this.score}`);
+    }
+
     collectStar(player, star) {
         star.destroy();
         this.score += 20;
         this.scoreText.setText(`Score: ${this.score}`);
         this.checkWin();
+    }
+
+    showGameOver() {
+        this.player.setVelocity(0, 0);
+        this.timerText.setText('');
+        this.scoreText.setText('');
+        
+        const { width, height } = this.scale;
+        
+        // Overlay escuro
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+            .setOrigin(0.5, 0.5)
+            .setScrollFactor(0);
+        
+        // Texto "GAME OVER"
+        this.gameOverText = this.add.text(width / 2, height / 2 - 80, 'GAME OVER', {
+            fontSize: '80px',
+            fill: '#ff0000',
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            align: 'center'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        
+        // Mostrar pontuação final
+        this.add.text(width / 2, height / 2, `Pontuação: ${this.score}`, {
+            fontSize: '32px',
+            fill: '#ffffff',
+            fontFamily: 'Arial',
+            align: 'center'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0);
+        
+        // Botão "Recomeçar" com imagem
+        const restartButton = this.add.image(width / 2, height / 2 + 80, 'btnVoltar').setScale(0.3);
+        restartButton.setScrollFactor(0);
+        restartButton.setInteractive({ useHandCursor: true });
+        
+        restartButton.on('pointerover', () => {
+            restartButton.setScale(0.35);
+        });
+        
+        restartButton.on('pointerout', () => {
+            restartButton.setScale(0.3);
+        });
+        
+        restartButton.on('pointerdown', () => {
+            this.scene.restart();
+        });
     }
 
     collectPotion(player, potion) {
@@ -273,6 +359,9 @@ export class GameScene extends Phaser.Scene {
         const centerX = width / 2;
         const rightEdge = width - 50;
         
+        // Reposicionar plataforma inicial baseado no scroll
+        this.startPlatform.x = 80 - this.scrollX;
+        
         // Reposicionar plataformas baseado no scroll para mantê-las fixas no mundo
         this.platformData.forEach((data, index) => {
             const platform = this.platforms.children.entries[index];
@@ -286,10 +375,24 @@ export class GameScene extends Phaser.Scene {
             item.sprite.y = item.y;
         });
         
+        // Reposicionar inimigos baseado no scroll
+        this.enemyPositions.forEach(enemy => {
+            enemy.sprite.x = enemy.x - this.scrollX;
+            enemy.sprite.y = enemy.y;
+        });
+        
         // Forçar recalculação de colisões (Phaser não faz isto automaticamente para corpos imóveis)
         this.platforms.children.entries.forEach(platform => {
             platform.body.updateFromGameObject();
         });
+        
+        // Verificar se o player caiu (GAME OVER)
+        const { height } = this.scale;
+        if (this.player.y > height && !this.gameOver) {
+            this.gameOver = true;
+            this.showGameOver();
+            return;
+        }
         
         // Atualizar tempo e verificar se ultrapassou o limite
         const elapsedTime = this.time.now - this.startTime;
@@ -299,23 +402,8 @@ export class GameScene extends Phaser.Scene {
         // Game over por tempo
         if (elapsedTime > this.timeLimit && !this.gameOver) {
             this.gameOver = true;
-            this.gameOverTime = this.time.now; // Guardar momento do game over
-            this.player.setVelocity(0, 0);
-            this.timerText.setText('');
-            
-            // Criar texto "GAME OVER" no centro da tela
-            const { width, height } = this.scale;
-            this.gameOverText = this.add.text(width / 2, height / 2, 'GAME OVER', {
-                fontSize: '80px',
-                fill: '#ff0000',
-                fontFamily: 'Arial',
-                align: 'center'
-            }).setOrigin(0.5, 0.5).setScrollFactor(0); // Não segue o scroll
-            
-            // Voltar ao menu após 3 segundos
-            this.time.delayedCall(3000, () => {
-                this.scene.start('HomeScene');
-            });
+            this.showGameOver();
+            return;
         }
         
         // Se game over, não continua a processar o resto do update
@@ -393,7 +481,6 @@ export class GameScene extends Phaser.Scene {
    
     updateWorldScroll() {
         this.background.tilePositionX = this.scrollX * 0.2; // parallax
-        this.ground.tilePositionX = this.scrollX;           // chão completo
         // As plataformas ficam fixas no mundo, não se mexem com o scroll
     }
 }
