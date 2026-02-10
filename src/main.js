@@ -2,6 +2,8 @@ import { BootScene } from './scenes/bootscene.js';
 import { HomeScene } from './scenes/homescene.js';
 import { RulesScene } from './scenes/rulesscene.js';
 import { GameScene } from './scenes/gamescene.js';
+import { SettingsScene } from './scenes/settingsscene.js';
+
 
 const config = {
     type: Phaser.AUTO,
@@ -22,7 +24,8 @@ const config = {
         BootScene,
         HomeScene,
         RulesScene,
-        GameScene
+        GameScene,
+        SettingsScene
     
     ],
 

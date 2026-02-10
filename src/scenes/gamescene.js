@@ -1,3 +1,7 @@
+import { EnemiesManager } from '../enemies.js';
+import { Player } from '../player.js';
+import { Settings } from '../settings.js';
+
 export class GameScene extends Phaser.Scene {
 
     constructor() {
@@ -7,6 +11,8 @@ export class GameScene extends Phaser.Scene {
     // imagens do jogo
     preload() {
         this.load.image('Fundo', 'assets/fundo.png');
+        this.load.image('Fundo2', 'assets/fundo_floresta.png');
+
         this.load.image('rock_tile', 'assets/rock.png');
         this.load.image('estrela', 'assets/estrela.png');
         this.load.image('pocao', 'assets/pocao.png');
@@ -18,6 +24,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('win', 'assets/win.png');
         this.load.image('btnRecomecar', 'assets/recomecar.png');
         this.load.image('btnMenu', 'assets/menu.png');
+        this.load.image('btnConfig', 'assets/config.png');
         this.load.spritesheet('wizard', 'assets/wizard.png',
             { frameWidth: 32, 
             frameHeight: 36 }
@@ -33,7 +40,12 @@ export class GameScene extends Phaser.Scene {
     create() {
         const { width, height } = this.scale;
 
-        this.background = this.add.tileSprite(0,0,width,height,'Fundo').setOrigin(0, 0);
+        const bgKey = Settings.background === 1 ? 'Fundo2' : 'Fundo';
+
+
+        this.background = this.add.tileSprite(
+            0, 0, width, height, bgKey
+        ).setOrigin(0, 0);
         this.gameOverSound = this.sound.add('game_over_sound');
         this.winSound = this.sound.add('win_sound', { volume: 20 });
         this.goodSound = this.sound.add('good_sound');
@@ -49,7 +61,8 @@ export class GameScene extends Phaser.Scene {
         this.startPlatform.body.setAllowGravity(false);
         this.startPlatform.refreshBody();
 
-        
+        this.player = new Player(this, 80, groundY - 18);
+
         // mapa
         this.worldEnd = 9200;
         this.scrollX = 0;
@@ -64,10 +77,25 @@ export class GameScene extends Phaser.Scene {
             fontFamily: 'Arial',
             align: 'center'
         }).setOrigin(0.5, 0).setScrollFactor(0); 
+
+        //DIFICULDADE
+        if (Settings.difficulty === 'hard') {
+            this.timeLimit = 45000;
+            this.enemySpeed = 180;
+            this.enemySpawnChance = 10;   // mais inimigos
+            this.minSpawnDistance = 160;
+        } else {
+            this.timeLimit = 60000;
+            this.enemySpeed = 100;
+            this.enemySpawnChance = 3;    // menos inimigos
+            this.minSpawnDistance = 260;
+        }
+
+
         
         // Sistema de pontos
         this.score = 0;
-        this.scoreText = this.add.text(width - 16, 16, 'Pontuação: 0', {
+        this.scoreText = this.add.text(width - 16, 16, 'Pontos: 0', {
             fontSize: '26px',
             fill: '#ffffff',
             fontFamily: 'Arial',
@@ -91,17 +119,7 @@ export class GameScene extends Phaser.Scene {
             this.scene.start('HomeScene');
         });
 
-        // jogador 
-        const playerY = groundY - 18; 
-        this.player = this.physics.add.sprite(80, playerY, 'wizard', 7);
-        this.player.setScale(2); 
-        this.player.setOrigin(0.5, 1);
-        this.player.setBounce(0, 0);
-        this.player.setDrag(0); 
-        this.player.setCollideWorldBounds(false); 
-        this.player.setGravityY(0); 
-        this.player.body.setSize(20, 35); 
-
+    
         // Cria as plataformas do mapa
         this.platforms = this.physics.add.group();
         this.platformData = [];
@@ -207,54 +225,35 @@ export class GameScene extends Phaser.Scene {
             }
         });
         
-        // Cria o grupo de inimigos e coloca-os em vários sitios
-        this.enemies = this.physics.add.group();
-        this.enemyPositions = [];
-        
-        // Posições dos 6 inimigos distribuídos pelo mapa
-        const enemyData = [
-            { x: 1000, y: 280 },
-            { x: 1850, y: 290 },
-            { x: 3000, y: 260 },
-            { x: 5500, y: 250 },
-            { x: 7000, y: 270 },
-            { x: 8400, y: 280 },
-        ];
-        
-        // Cria cada inimigo
-        enemyData.forEach(enemy => {
-            const monster = this.enemies.create(enemy.x, enemy.y, 'monster');
-            monster.setScale(2);
-            monster.setImmovable(true);
-            monster.setVelocity(0, 0);
-            monster.body.setAllowGravity(false);
-            this.enemyPositions.push({ x: enemy.x, y: enemy.y, sprite: monster });
-        });
-        
         // Cria a bandeira no final do mapa (objetivo do jogo)
         this.flag = this.physics.add.sprite(8900, 300, 'flag');
         this.flag.setScale(0.4);
         this.flag.setImmovable(true);
         this.flag.body.setAllowGravity(false);
         this.flagPosition = { x: 8900, y: 210 };
+
+        this.enemiesManager = new EnemiesManager(
+            this,
+            this.platforms,
+            this.itemPositions,
+            this.flagPosition
+        );
         
         // o jogador toca num inimigo
-        this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
+        this.physics.add.overlap(this.player.sprite, this.enemiesManager.getGroup(), this.hitEnemy, null, this);
         
         // o jogador toca na bandeira
-        this.physics.add.overlap(this.player, this.flag, this.reachFlag, null, this);
+        this.physics.add.overlap(this.player.sprite, this.flag, this.reachFlag, null, this);
         
         // o jogador recolhe itens
-        this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
-        this.physics.add.overlap(this.player, this.potions, this.collectPotion, null, this);
+        this.physics.add.overlap(this.player.sprite, this.stars, this.collectStar, null, this);
+        this.physics.add.overlap(this.player.sprite, this.potions, this.collectPotion, null, this);
 
         // o jogador possa estar em pé nas plataformas
-        this.physics.add.collider(this.player, this.startPlatform);
-        this.platformCollider = this.physics.add.collider(this.player, this.platforms);
+        this.physics.add.collider(this.player.sprite, this.startPlatform);
+        this.platformCollider = this.physics.add.collider(this.player.sprite, this.platforms);
 
         this.cursors = this.input.keyboard.createCursorKeys();
-
-        this.createAnimations();
     }
 
     hitEnemy(player, enemy) {
@@ -266,7 +265,7 @@ export class GameScene extends Phaser.Scene {
         
         // Perde 10 pontos
         this.score = Math.max(0, this.score - 10);
-        this.scoreText.setText(`Score: ${this.score}`);
+        this.scoreText.setText(`Pontos: ${this.score}`);
     }
 
     reachFlag(player, flag) {
@@ -280,8 +279,23 @@ export class GameScene extends Phaser.Scene {
     collectStar(player, star) {
         // Apanha a estrela
         star.destroy();
+        this.itemPositions = this.itemPositions.filter(item => item.sprite !== star);
+        this.enemiesManager.itemPositions = this.itemPositions;
         this.score += 20;
-        this.scoreText.setText(`Score: ${this.score}`);
+        this.scoreText.setText(`Pontos: ${this.score}`);
+        if (this.goodSound) {
+            this.goodSound.play();
+        }
+        this.checkWin();
+    }
+
+        // o jogador apanha uma poção
+    collectPotion(player, potion) {
+        potion.destroy();
+        this.itemPositions = this.itemPositions.filter(item => item.sprite !== potion);
+        this.enemiesManager.itemPositions = this.itemPositions;
+        this.score += 10;
+        this.scoreText.setText(`Pontos: ${this.score}`);
         if (this.goodSound) {
             this.goodSound.play();
         }
@@ -290,7 +304,7 @@ export class GameScene extends Phaser.Scene {
 
     showWin() {
         // Para o jogador de se mover
-        this.player.setVelocity(0, 0);
+        this.player.sprite.setVelocity(0, 0);
         this.timerText.setText('');
         this.scoreText.setText('');
         if (this.winSound) {
@@ -308,7 +322,7 @@ export class GameScene extends Phaser.Scene {
         this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
         
         // Mostra a pontuação 
-        this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
+        this.add.text(width / 2, height / 2 + 30, `Pontos: ${this.score}`, {
             fontSize: '32px',
             fill: '#ffffff',
             fontFamily: 'Arial',
@@ -352,7 +366,7 @@ export class GameScene extends Phaser.Scene {
 
     showGameOver() {
         // Para o jogador de se mover
-        this.player.setVelocity(0, 0);
+        this.player.sprite.setVelocity(0, 0);
         this.timerText.setText('');
         this.scoreText.setText('');
         if (this.gameOverSound) {
@@ -412,22 +426,11 @@ export class GameScene extends Phaser.Scene {
         }); 
     }
 
-    // o jogador apanha uma poção
-    collectPotion(player, potion) {
-        potion.destroy();
-        this.score += 10;
-        this.scoreText.setText(`Score: ${this.score}`);
-        if (this.goodSound) {
-            this.goodSound.play();
-        }
-        this.checkWin();
-    }
-
     // Verifica se o jogador ganhou 
     checkWin() {
         if (this.score >= 100 && !this.gameOver) {
             this.gameOver = true;
-            this.player.setVelocity(0, 0);
+            this.player.sprite.setVelocity(0, 0);
                 if (this.winSound) {
                     this.winSound.play();
                 }
@@ -442,7 +445,7 @@ export class GameScene extends Phaser.Scene {
             this.add.image(width / 2, height / 2 - 80, 'win').setScale(1).setOrigin(0.5, 0.5).setScrollFactor(0);
             
             // Mostra a pontuação
-            this.add.text(width / 2, height / 2 + 30, `Pontuação: ${this.score}`, {
+            this.add.text(width / 2, height / 2 + 30, `Pontos: ${this.score}`, {
                 fontSize: '32px',
                 fill: '#ffffff',
                 fontFamily: 'Arial',
@@ -485,46 +488,17 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    // Cria as animações do wizard
-    createAnimations() {
-        // esquerda
-        this.anims.create({
-            key: 'left',
-            frames: this.anims.generateFrameNumbers('wizard', { frames: [9, 10, 11] }),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        //  direita
-        this.anims.create({
-            key: 'right',
-            frames: this.anims.generateFrameNumbers('wizard', { frames: [3, 4, 5] }),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        // parado
-        this.anims.create({
-            key: 'turn',
-            frames: [{ key: 'wizard', frame: 7 }],
-            frameRate: 20
-        });
-
-        // saltar
-        this.anims.create({
-            key: 'up',
-            frames: this.anims.generateFrameNumbers('wizard', { frames: [7] }),
-            frameRate: 10,
-            repeat: -1
-        });
-    }
-
-   
     update() {
         const { width } = this.scale;
         const centerX = width / 2;
         const rightEdge = width - 50;
         
+        const screenCenter = this.scale.width / 2;
+        const leftLimit = 80;
+        const rightLimit = this.scale.width - 80;
+
+        const input = this.player.update();
+
         // Move a plataforma inicial conforme o scroll do mapa
         this.startPlatform.x = 80 - this.scrollX;
         
@@ -545,12 +519,7 @@ export class GameScene extends Phaser.Scene {
         this.flag.x = this.flagPosition.x - this.scrollX;
         this.flag.y = this.flagPosition.y;
         
-        // posição de todos os inimigos no ecrã
-        this.enemyPositions.forEach(enemy => {
-            enemy.sprite.x = enemy.x - this.scrollX;
-            enemy.sprite.y = enemy.y;
-        });
-        
+
         // colisões das plataformas (importante para plataformas que não se mexem)
         this.platforms.children.entries.forEach(platform => {
             platform.body.updateFromGameObject();
@@ -558,7 +527,7 @@ export class GameScene extends Phaser.Scene {
         
         // o jogador caiu (game over)
         const { height } = this.scale;
-        if (this.player.y > height && !this.gameOver) {
+        if (this.player.sprite.y > height && !this.gameOver) {
             this.gameOver = true;
             this.showGameOver();
             return;
@@ -579,71 +548,61 @@ export class GameScene extends Phaser.Scene {
         if (this.gameOver) {
             return;
         }
-        
-        // Quando a seta para a direita está pressionada
-        if (this.cursors.right.isDown) {
-          
-            if (this.player.x < centerX && this.scrollX === 0) {
-                this.player.setVelocityX(100);
-                this.player.anims.play('right', true);
+
+
+        if (input.right) {
+
+            if (this.player.sprite.x < centerX && this.scrollX === 0) {
+                this.player.sprite.setVelocityX(160);
+                this.player.sprite.anims.play('right', true);
             }
             else if (this.scrollX < this.worldEnd) {
-                this.player.setVelocityX(0);
+                this.player.sprite.setVelocityX(0);
                 this.scrollX += 2;
-                this.player.anims.play('right', true);
-                this.updateWorldScroll();
+                this.player.sprite.anims.play('right', true);
             }
-            else if (this.player.x < rightEdge) {
-                this.player.setVelocityX(100);
-                this.player.anims.play('right', true);
+            else if (this.player.sprite.x < rightLimit) {
+                this.player.sprite.setVelocityX(160);
+                this.player.sprite.anims.play('right', true);
             }
             else {
-                this.player.setVelocityX(0);
-                this.player.anims.play('turn');
+                this.player.sprite.setVelocityX(0);
             }
         }
-       
-        // Quando a seta para a esquerda está pressionada
-        else if (this.cursors.left.isDown) {
 
-            if (this.player.x > centerX && this.scrollX === this.worldEnd) {
-                this.player.setVelocityX(-100);
-                this.player.anims.play('left', true);
+        else if (input.left) {
+
+            if (this.player.sprite.x > centerX && this.scrollX === this.worldEnd) {
+                this.player.sprite.setVelocityX(-160);
+                this.player.sprite.anims.play('left', true);
             }
-
             else if (this.scrollX > 0) {
-                this.player.setVelocityX(0);
+                this.player.sprite.setVelocityX(0);
                 this.scrollX -= 2;
-                this.player.anims.play('left', true);
-                this.updateWorldScroll();
+                this.player.sprite.anims.play('left', true);
             }
-
-            else if (this.player.x > 50) {
-                this.player.setVelocityX(-100);
-                this.player.anims.play('left', true);
+            else if (this.player.sprite.x > leftLimit) {
+                this.player.sprite.setVelocityX(-160);
+                this.player.sprite.anims.play('left', true);
             }
-
             else {
-                this.player.setVelocityX(0);
-                this.player.anims.play('turn');
+                this.player.sprite.setVelocityX(0);
             }
         }
 
-        // Se não pressionar nada, o mago fica parado
         else {
-            this.player.setVelocityX(0);
-            this.player.anims.play('turn');
+            this.player.sprite.setVelocityX(0);
+            this.player.sprite.anims.play('turn');
         }
 
-        // Quando pressiona a seta para cima e está no chão - SALTO!
-        if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.setVelocityY(-420);
+        if (input.jump && this.player.sprite.body.touching.down) {
+            this.player.sprite.setVelocityY(-420);
         }
 
         this.updateWorldScroll();
+        this.enemiesManager.update(this.scrollX, this.player.sprite.x);
     }
 
-   
     // Atualiza o fundo conforme o scroll do mapa
     updateWorldScroll() {
         this.background.tilePositionX = this.scrollX * 0.2;

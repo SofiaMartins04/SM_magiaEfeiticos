@@ -8,6 +8,7 @@ export class HomeScene extends Phaser.Scene {
         this.load.image('logo', 'assets/logo.png');
         this.load.image('btnComecar', 'assets/comecar.png');
         this.load.image('btnRegras', 'assets/regras.png');
+        this.load.image('BtnConfig', 'assets/config.png');
     }
 
     // Cria o menu principal
@@ -59,5 +60,28 @@ export class HomeScene extends Phaser.Scene {
             fill: '#888888',
             fontFamily: 'Arial'
         }).setOrigin(1, 1).setAlpha(0.9);
+
+
+        // Botão CONFIG (canto superior direito)
+        const buttonConfig = this.add.image(
+            width - 80,
+            50,
+            'BtnConfig'
+        ).setOrigin(0.5, 0.5).setScale(0.3);
+
+        buttonConfig.setScrollFactor(0);
+        buttonConfig.setInteractive({ useHandCursor: true });
+
+        buttonConfig.on('pointerover', () => {
+            buttonConfig.setScale(0.3);
+        });
+
+        buttonConfig.on('pointerout', () => {
+            buttonConfig.setScale(0.25);
+        });
+
+        buttonConfig.on('pointerdown', () => {
+            this.scene.start('SettingsScene');
+        });
     }
 }
